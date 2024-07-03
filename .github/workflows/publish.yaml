@@ -1,13 +1,17 @@
 name: Publish
+
 on:
+  workflow_dispatch:
   push:
     tags:
-      - '*.*.*.*'
+      - 'v*'
+
 jobs:
   Build:
     permissions:
       contents: write
     runs-on: windows-latest
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -17,14 +21,13 @@ jobs:
       - name: Get Environment Variables
         run: |
           $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
-
           "tag=$tag" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 8.0.x
-
+          
       - name: Download Dalamud Latest
         run: |
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
@@ -34,13 +37,13 @@ jobs:
         run: dotnet restore BasicRotations/DefaultRotations.csproj
 
       - name: Build Rotations
-        run: dotnet build --no-restore -c Release BasicRotations/DefaultRotations.csproj -p:AssemblyVersion=${{ env.tag }} -p:FileVersion=${{ env.tag }} -p:InformationalVersion=${{ env.tag }} --output .\build
+        run: dotnet build --no-restore -c Release BasicRotations/DefaultRotations.csproj --output .\build
 
       - name: Publish Rotations
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v1.0.0
           files: |
             ./build/DefaultRotations.dll
             ./build/DefaultRotations.pdb
           token: ${{ secrets.GITHUB_TOKEN }}
-
